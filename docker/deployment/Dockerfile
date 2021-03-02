@@ -1,8 +1,19 @@
 ARG BUILD_ARG_ENV
 #
-FROM php:8-fpm
 
+FROM node:14 as assets
 WORKDIR /var/www/html
+
+###########################################
+## node
+COPY package.json package-lock.json semantic.json ./
+COPY semantic ./semantic/
+RUN npm install 
+COPY resources ./resources/
+COPY webpack.config.js webpack.mix.js ./
+RUN npm run production
+
+FROM php:8-fpm
 
 ############################################
 ## Set timezone
@@ -55,15 +66,22 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+# php-fpm.conf
+COPY ./docker/deployment/php/app.conf /usr/local/etc/php-fpm.d/app.conf
+
 # Install extensions
 RUN docker-php-ext-install pdo_mysql
+
 # Install composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 COPY composer.lock composer.json /var/www/html/
 RUN composer install --no-autoloader
-COPY --chown=www-data:www-data . /var/www/html
-COPY ./docker/deployment/php/app.conf /usr/local/etc/php-fpm.d/app.conf
 
+# app
+COPY --chown=www-data:www-data . /var/www/html
+COPY --from=assets /var/www/html/public/ /var/www/html/public/
+
+# storage
 RUN mkdir -p ./storage/app \
     && mkdir -p ./storage/framework/cache/data \
     && mkdir -p ./storage/framework/sessions \
