@@ -7,7 +7,7 @@ use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvi
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
-
+use App;        /* 追加 */
 class RouteServiceProvider extends ServiceProvider
 {
     /**
@@ -43,10 +43,16 @@ class RouteServiceProvider extends ServiceProvider
                 ->namespace($this->namespace)
                 ->group(base_path('routes/api.php'));
 
+            /*
             Route::middleware('web')
                 ->namespace($this->namespace)
                 ->group(base_path('routes/web.php'));
-        });
+            */
+            Route::prefix(App::environment('production') ? env('APP_DIR') : '')
+                 ->middleware('web')
+                 ->namespace($this->namespace)
+                 ->group(base_path('routes/web.php'));
+            });
     }
 
     /**
@@ -60,4 +66,14 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by(optional($request->user())->id ?: $request->ip());
         });
     }
+
+    /*
+    protected function mapWebRoutes()
+    {
+        Route::prefix(App::environment('production') ? env('APP_DIR') : '')
+            ->middleware('web')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/web.php'));
+    }
+    */
 }
