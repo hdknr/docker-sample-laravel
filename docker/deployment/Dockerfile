@@ -37,13 +37,11 @@ RUN mkdir ~/.ssh
 COPY ./docker/deployment/ssh/hdknr.pub /root/.ssh/authorized_keys
 # RUN echo $SSH_PUBLIC_KEY >> ~/.ssh/authorized_keys
 RUN chmod 0600 /root/.ssh/authorized_keys
-EXPOSE 22
 
 ############################################
 ## nginx
 RUN apt-get install nginx -y
 COPY ./docker/deployment/nginx/conf.d/default.conf /etc/nginx/sites-enabled/default
-EXPOSE 80
 
 ############################################
 ## PHP Laravel
@@ -90,8 +88,15 @@ RUN mkdir -p ./storage/app \
     && chown -R www-data:www-data ./storage
 
 RUN composer dump-autoload
-RUN mv ./.env.prod ./.env \
-    && php artisan key:generate 
+RUN mv ./.env.prod ./.env 
+
+# alive
+COPY ./docker/deployment/php/alive.php /var/www/html/public/
+
+############################################
+## PORT
+EXPOSE 22
+EXPOSE 80
 
 ############################################
 ## Entry Point
